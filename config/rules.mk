@@ -264,7 +264,25 @@ ifdef NETCDFLIBDIR
     LIBS += -L$(NETCDFLIBDIR) -L/opt/local/lib -lnetcdff -lnetcdf
   endif
   ifneq ($(wildcard $(NETCDFLIBDIR)/libhdf5.*),)
-    LIBS += -lhdf5_hl -lhdf5 -ldl -lcurl -lz -lsz
+    LIBS += -lhdf5_hl -lhdf5 -ldl
+    ifeq ($(MACHINE),Darwin)
+      # curl, zlib and szip need naming explicitly only when netCDF/HDF5 are
+      # static. Homebrew's are shared, so they resolve transitively, and macOS
+      # provides libcurl and libz only as SDK stubs rather than as linkable
+      # libraries here - giving "ld: library 'curl' not found" (then 'z') after
+      # everything else had built. Add each only when actually present.
+      ifneq ($(wildcard $(NETCDFLIBDIR)/libcurl.*),)
+        LIBS += -lcurl
+      endif
+      ifneq ($(wildcard $(NETCDFLIBDIR)/libz.*),)
+        LIBS += -lz
+      endif
+      ifneq ($(wildcard $(NETCDFLIBDIR)/libsz.*),)
+        LIBS += -lsz
+      endif
+    else
+      LIBS += -lcurl -lz -lsz
+    endif
   endif
 endif
 
