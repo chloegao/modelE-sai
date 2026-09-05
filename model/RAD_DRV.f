@@ -74,7 +74,8 @@ C****
 #ifdef TRACERS_ON
       use rad_com, only: nraero_rf,nraero_seasalt,
      *                   nraero_koch,nraero_nitrate,nraero_dust,
-     *                   nraero_OMA,nraero_AMP,nraero_TOMAS
+     *                   nraero_OMA,nraero_AMP,nraero_TOMAS,
+     *                   nraero_sai,itr_sai
 #endif  /* TRACERS_ON */
       USE RAD_COM, only : rqt, s0x
      *     ,snoage_def
@@ -113,6 +114,9 @@ C****
       USE TRACER_COM, only: n_OCB, n_OCIA, n_Isopp1a, n_SO4
       USE TRACER_COM, only: n_Isopp2a, n_apinp1a, n_apinp2a
       USE TRACER_COM, only: n_BrC_w, n_BrC_b, n_BrC_t
+#ifdef TRACERS_SAI
+      USE TRACER_COM, only: n_SAI
+#endif
       USE TRACER_COM, only: n_vbsAm2
       use RAD_COM, only: diag_fc
       use TRDIAG_COM, only: save_dry_aod
@@ -603,6 +607,7 @@ caer   KRHTRA=(/1,1,1,1,1,1,1,1/)
       ENDIF
 #else
       nraero_OMA=nraero_seasalt+nraero_koch+nraero_nitrate+nraero_dust
+     &          +nraero_sai
       IF (diag_fc==2) THEN
         nraero_rf=nraero_rf+nraero_OMA
       ELSE IF (diag_fc==1) THEN
@@ -1011,6 +1016,24 @@ c        write(6,*) "subClayWeights = ", subClayWeights
       endif
       n=n+nraero_dust
 #endif  /* (defined TRACERS_DUST) || (defined TRACERS_MINERALS) */
+!-----------------------------------------------------------------------
+#ifdef TRACERS_SAI
+      if (nraero_sai > 0) then
+#ifndef OMA_TRAMPRAD
+        call stop_model('TRACERS_SAI (v1) requires OMA_TRAMPRAD',255)
+#endif
+        if (n_SAI<=0) call stop_model(
+     &    'TRACERS_SAI requires TRACERS_AEROSOLS_Koch',255)
+        ntrix_aod(n+1:n+nraero_sai)=(/n_SAI/)
+        trrdry(n+1:n+nraero_sai)=(/0.24d0/) ! um dry radius (PLACEHOLDER,
+                                ! keep = trradius in KochTracersMetadata)
+        itr(n+1:n+nraero_sai)=(/itr_sai/)   ! sentinel: SAI-specific optics
+        itroma(n+1:n+nraero_sai)=(/itr_sai/)! (TRAMP_rad uses Ri_SAI not Ri)
+        krhtra(n+1:n+nraero_sai)=(/0/)      ! no RH dependence
+        fstasc(n+1:n+nraero_sai)=(/1.0d0/)  ! no SW enhancement
+      endif
+      n=n+nraero_sai
+#endif  /* TRACERS_SAI */
 !-----------------------------------------------------------------------
 !define ntrix_rf, based on the OMA tracers above
       if (n>0) then

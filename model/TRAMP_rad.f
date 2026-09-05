@@ -25,7 +25,7 @@ c -----------------------------------------------------------------
      +                       Reff_LEV, NUMB_LEV, RindexAMP, AMP_Q55, dry_Vf_LEV,
      +                       LWaerosolCalcs
 
-      USE RAD_COM, ONLY: nraero_aod
+      USE RAD_COM, ONLY: nraero_aod, itr_sai
       USE RESOLUTION,  only: lm
       USE MODEL_COM,   only: itime,itimeI
       USE RADPAR,      only: aesqex,aesqsc,aesqcb,aesasy,
@@ -77,7 +77,11 @@ C Longwave Pre calculate TAB: --------------------------------------------------
       if (itr(n).eq.6) NA = 5         ! Bc
       if (itr(n).eq.7) NA = 6         ! Dust
       if (itr(n).gt.7) NA = 4         ! BrC
-      NS = 0     ! shell class Not used 
+#ifdef TRACERS_SAI
+      if (itr(n).eq.itr_sai) NA = 6   ! SAI: dust LW core class (dense
+                                      ! solid scatterer; PLACEHOLDER)
+#endif
+      NS = 0     ! shell class Not used
       Vf(:)=0.d0 
       CALL GET_LW(0,NA,NS,trrdry(n),AMP_TAB,Vf)
       AMP_TAB_SPEC(:,n)=AMP_TAB(:)
@@ -189,7 +193,10 @@ C Longwave: --------------------------------------------------------------------
           if (itr(n).le.5) NA = itr(n)    ! SO4, SS, NO3, OC
           if (itr(n).eq.6) NA = 5         ! Bc
           if (itr(n).eq.7) NA = 6         ! Dust
-          NS = 0 ! shell class Not used 
+#ifdef TRACERS_SAI
+          if (itr(n).eq.itr_sai) NA = 6   ! SAI as dust in LW
+#endif
+          NS = 0 ! shell class Not used
           Vf(:)=0.d0
           CALL GET_LW(l,NA,NS,Reff_LEV(l,n),AMP_TAB,Vf)
           TAB(l,:) = TAB(l,:) + (AMP_TAB(:) *  TTAUSV(l,n) * FTTOPX(n))
@@ -582,7 +589,7 @@ c -----------------------------------------------------------------
      +  dry_Vf_LEV,MIX_OC,MIX_SU,MIX_AQ,LWaerosolCalcs,
      +  separate_h2so4p
       USE TRACER_COM,  only: TRM,n_NH4,n_NO3p,n_SO4
-      USE RAD_COM, only: nraero_aod, ntrix_aod
+      USE RAD_COM, only: nraero_aod, ntrix_aod, itr_sai
       USE RADPAR, only: trrdry, refdry,itr,itroma,tracer
       USE RADPAR, only: q55dry
       USE OldTracer_mod, only: trname,tr_mm
@@ -742,6 +749,26 @@ c However, may be similar enough to not be worth the computational efficiency lo
       DATA Ri_H2SO4/(1.344,  0.087), (1.390, 7.7e-4),
      &              (1.409, 4.9e-5), (1.420, 2.2e-6),
      &              (1.427, 1.1e-7), (1.435, 1.1e-8)/
+
+#ifdef TRACERS_SAI
+c ================== PLACEHOLDER SAI OPTICAL CONSTANTS =====================
+c Alumina (Al2O3): Re ~1.77, essentially non-absorbing in the solar bands.
+c SUBSTITUTE MEASURED VALUES HERE (6 solar bands, same band ordering as the
+c Ri table above; solar-flux-weighted band averages).
+c NOTE: the AMP Mie lookup grid spans Re=1.25-1.90, Im=0.0-1.0 and snaps UP
+c to the nearest grid point (no interpolation): Re=1.77 -> 1.80 column;
+c Im=1.e-8 -> 1.e-5 column (still non-absorbing). Materials with Re>1.90
+c would clamp to 1.90 -- check before substituting.
+      COMPLEX*8, DIMENSION(6) :: Ri_SAI
+      DATA Ri_SAI/(1.77, 1.00000e-08), (1.77, 1.00000e-08),
+     &            (1.77, 1.00000e-08), (1.77, 1.00000e-08),
+     &            (1.77, 1.00000e-08), (1.77, 1.00000e-08)/
+c SAI particle density in g cm-3 (alumina PLACEHOLDER; keep consistent with
+c trpdens=3.95d3 kg/m3 in KochTracersMetadata.F90). Used only in the number
+c concentration estimate below.
+      real*8, parameter :: density_SAI = 3.950d0
+c ==========================================================================
+#endif  /* TRACERS_SAI */
 
 c Growth factor per oma radiation specie: Based on Petters & Kreidenweis ACP 2007
 c for SO4, and sea salt, other estimates used for NO3/OC/BC and dust. 
@@ -1006,9 +1033,18 @@ c     If prognostic nitrate isn't enabled, assume all SO4 is amm sulf
 
       DO n=1,nraero_aod
 
+#ifdef TRACERS_SAI
+c**** SAI: solid, externally mixed, NON-HYGROSCOPIC particle. No Kohler
+c**** growth and no water-volume mixing of the refractive index -- the
+c**** particle keeps its dry radius and Ri_SAI at all RH.
+      if (itr(n).eq.itr_sai) then
+        RindexAMP(l,n,:) = Ri_SAI(:)
+        trrwet = trrdry(n)
+      else
+#endif
 #ifdef TRACERS_BrC
       if ((itr(n).lt.7).or.(itr(n).gt.7)) then ! includes BrC_w(8),BrC_b(9),BrC_t(10)
-#else         
+#else
       if (itr(n).lt.7) then  ! ss(2), so4(1), no3(3),  oc(4) and bc(6)
 #endif
          rh=max(0.01d0,min(rhl(l),0.99d0))
@@ -1037,10 +1073,23 @@ c     Hydrated refractive index
          RindexAMP(l,n,:) = Ri(:,itroma(n))
          trrwet = trrdry(n)
       endif
+#ifdef TRACERS_SAI
+      endif
+#endif
 
        Reff_LEV(l,n)= trrwet
-       NUMB_LEV(l,n) =(tracer(l,n)*1.d3)/(1.333d0*pi*trrdry(n)**3.d0*density_aer(itr(n)))    
+#ifdef TRACERS_SAI
+       if (itr(n).eq.itr_sai) then
+       NUMB_LEV(l,n) =(tracer(l,n)*1.d3)/(1.333d0*pi*trrdry(n)**3.d0*density_SAI)
      &              * (trrwet**2.d0* pi)
+       else
+       NUMB_LEV(l,n) =(tracer(l,n)*1.d3)/(1.333d0*pi*trrdry(n)**3.d0*density_aer(itr(n)))
+     &              * (trrwet**2.d0* pi)
+       endif
+#else
+       NUMB_LEV(l,n) =(tracer(l,n)*1.d3)/(1.333d0*pi*trrdry(n)**3.d0*density_aer(itr(n)))
+     &              * (trrwet**2.d0* pi)
+#endif
       ENDDO
 
 

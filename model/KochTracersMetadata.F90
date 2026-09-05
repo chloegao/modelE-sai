@@ -23,6 +23,9 @@ module KochTracersMetadata_mod
   use TRACER_COM, only:  n_MSA, n_SO4, n_DMS, &
     n_BCII,  n_BCIA,  n_BCB, n_OCII,  n_OCIA,  n_OCB, n_H2O2_s
   use TRACER_COM, only: n_BrC_w, n_BrC_b, n_BrC_t
+#ifdef TRACERS_SAI
+  use TRACER_COM, only: n_SAI
+#endif
   use TRACER_COM, only: tracers
   use Dictionary_mod, only: sync_param
   use RunTimeControls_mod, only: tracers_drydep
@@ -69,6 +72,9 @@ module KochTracersMetadata_mod
 #endif
 #endif /* not TRACERS_AEROSOLS_VBS */
     end if
+#ifdef TRACERS_SAI
+    call  SAI_setSpec('SAI')       !Stratospheric aerosol injection particle
+#endif
 
 !------------------------------------------------------------------------------
   contains
@@ -308,7 +314,30 @@ module KochTracersMetadata_mod
       call set_pm10fact(n, 1.d0) ! fraction that's PM10
       call set_has_chemistry(n, .true.)
     end subroutine BrC_t_setSpec
-    
+
+#ifdef TRACERS_SAI
+    subroutine SAI_setSpec(name)
+!**** Inert solid particle for stratospheric aerosol injection (SAI).
+!**** ================= PLACEHOLDER MATERIAL: alumina (Al2O3) ==============
+!**** To switch injection material, change tr_mm / trpdens / trradius here
+!**** and Ri_SAI / density_SAI in TRAMP_rad.f, and trrdry in RAD_DRV.f.
+!**** =======================================================================
+      character(len=*), intent(in) :: name
+      n = oldAddTracer(name)
+      n_SAI = n
+      call set_ntm_power(n, -11)
+      call set_tr_mm(n, 102.d0)     ! kg/kmol; Al2O3=101.96 (PLACEHOLDER)
+      call set_trpdens(n, 3.95d3)   ! kg/m3; alumina (PLACEHOLDER)
+      call set_trradius(n, 0.24d-6) ! m; dry effective radius (PLACEHOLDER)
+      call set_fq_aer(n, 0.0d0)     ! insoluble solid: no in-cloud dissolution
+      call set_tr_wd_type(n, npart)
+      call set_pm2p5fact(n, 1.d0)   ! fraction that's PM2.5
+      call set_pm10fact(n, 1.d0)    ! fraction that's PM10
+      call set_hygro_oma(n, 0.d0)   ! non-hygroscopic (no kohler growth)
+      ! has_chemistry left at default .false. -- SAI is inert
+    end subroutine SAI_setSpec
+#endif /* TRACERS_SAI */
+
   end subroutine KOCH_InitMetadata
 
 end module KochTracersMetadata_mod

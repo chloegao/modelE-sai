@@ -296,6 +296,9 @@
 #endif
       use TRACER_COM, only: direct_inject_BC
       use TRACER_COM, only: direct_inject_OC
+#ifdef TRACERS_SAI
+      use TRACER_COM, only: direct_inject_SAI
+#endif
       use TRACER_COM, only: CO50_yield_from_CH4
       use Dictionary_mod, only: set_param, sync_param
       use RunTimeControls_mod, only: tracers_special_shindell
@@ -437,6 +440,9 @@
 #endif
        allocate(direct_inject_BC(direct_inject_num))
        allocate(direct_inject_OC(direct_inject_num))
+#ifdef TRACERS_SAI
+       allocate(direct_inject_SAI(direct_inject_num+ex_volc_num))
+#endif
 
 ! set default emissions to full day length and zero amount
        direct_inject_hr0(:)=0
@@ -452,6 +458,9 @@
 #endif
        direct_inject_BC(:)=0.d0
        direct_inject_OC(:)=0.d0
+#ifdef TRACERS_SAI
+       direct_inject_SAI(:)=0.d0
+#endif
 
        direct_inject_rectlat0(:)=-999.d0 ! init as negative values so
        direct_inject_rectlat1(:)=-999.d0 ! model can tell if not used
@@ -501,6 +510,10 @@
      &    direct_inject_num)
         call sync_param("direct_inject_OC", direct_inject_OC,
      &    direct_inject_num)
+#ifdef TRACERS_SAI
+        call sync_param("direct_inject_SAI", direct_inject_SAI,
+     &    direct_inject_num)
+#endif
        else
         direct_inject_num = ex_volc_num
 
@@ -630,6 +643,10 @@
      &      call stop_model('direct_inject_BC(ex)<0.d0', 255)
          if (direct_inject_OC(ex)<0.d0)
      &      call stop_model('direct_inject_OC(ex)<0.d0', 255)
+#ifdef TRACERS_SAI
+         if (direct_inject_SAI(ex)<0.d0)
+     &      call stop_model('direct_inject_SAI(ex)<0.d0', 255)
+#endif
        enddo
       endif
 

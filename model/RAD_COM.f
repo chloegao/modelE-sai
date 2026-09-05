@@ -192,6 +192,21 @@ C**** does not produce exactly the same as the default values.
       integer, parameter :: nraero_seasalt=0
 #endif  /* TRACERS_AEROSOLS_SEASALT */
 
+!@param nraero_sai Number of SAI (stratospheric aerosol injection) tracers
+!@+     passed to radiation. Kept separate from nraero_koch so that SAI is
+!@+     independent of the BrC/SOA/VBS CPP combinations.
+#ifdef TRACERS_SAI
+      integer, parameter :: nraero_sai=1
+#else
+      integer, parameter :: nraero_sai=0
+#endif  /* TRACERS_SAI */
+!@param itr_sai Sentinel itr/itroma value marking the SAI tracer in the
+!@+     OMA_TRAMPRAD optics code (TRAMP_rad.f). Must not collide with the
+!@+     base classes 1-7 or the BrC/SOA values 8-14. It is never used as an
+!@+     array index outside SAI-specific branches (RADIATION.f returns
+!@+     before its ITR-indexed Mie setup whenever OMA_TRAMPRAD is active).
+      integer, parameter :: itr_sai=99
+
 #ifdef TRACERS_ON
 !@var njaero max expected rad code tracers passed to photolysis
 !@var nraero_aod_rsf value of nraero_aod found in the rsf file

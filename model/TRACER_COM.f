@@ -65,6 +65,9 @@ c
 !@dbparam direct_inject_DD2 DU emissions (coarse, in Tg day-1) as volc ash
 !@dbparam direct_inject_BC BC emissions (in Tg day-1) of wildfires
 !@dbparam direct_inject_OC OC emissions (in Tg day-1) of wildfires
+!@dbparam direct_inject_SAI SAI solid-particle emissions, event total
+!@+   in Tg spread evenly over ndays (Tg day-1 only if ndays=1)
+!@+       for stratospheric aerosol injection experiments
       integer                            :: direct_inject_num
       integer                            :: ex_volc_num
       integer, allocatable, dimension(:) :: direct_inject_hr0
@@ -89,6 +92,9 @@ c
 #endif
       real*8,  allocatable, dimension(:) :: direct_inject_BC
       real*8,  allocatable, dimension(:) :: direct_inject_OC
+#ifdef TRACERS_SAI
+      real*8,  allocatable, dimension(:) :: direct_inject_SAI
+#endif
 
 #ifdef WATER_MISC_GRND_CH4_SRC
 !@dbparam scale_CH4MGOL global scaling available to either Shindell
@@ -390,6 +396,7 @@ C**** Each tracer has a variable name and a unique index
      *     n_BCII=0,  n_BCIA=0,  n_BCB=0,
      *     n_OCII=0,  n_OCIA=0,  n_OCB=0,
      *     n_BrC_w=0, n_BrC_b=0, n_BrC_t=0,
+     *     n_SAI=0,
      *     n_vbsGm2=0, n_vbsGm1=0, n_vbsGz=0,  n_vbsGp1=0, n_vbsGp2=0,
      *     n_vbsGp3=0, n_vbsGp4=0, n_vbsGp5=0, n_vbsGp6=0,
      *     n_vbsAm2=0, n_vbsAm1=0, n_vbsAz=0,  n_vbsAp1=0, n_vbsAp2=0,

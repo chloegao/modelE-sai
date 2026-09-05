@@ -1413,6 +1413,9 @@ C****
 #endif
       write(6,*) '...and BrC organic aerosols'
 #endif
+#ifdef TRACERS_SAI
+      write(6,*) '...and SAI stratospheric-injection aerosol'
+#endif
 #ifdef TRACERS_AEROSOLS_SEASALT
       write(6,*) '...and sea salt aerosols'
 #endif

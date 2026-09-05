@@ -32,6 +32,8 @@
 !@var DD2_src_3D dust as proxy volcanic ash sources (coarse, kg kg-1 s-1) TRACERS_AMP only
 !@var BC_src_3D BC wildfire sources (kg kg-1 s-1)
 !@var OC_src_3D OC wildfire sources (kg kg-1 s-1)
+!@var SAI_src_3D SAI direct injection source for stratospheric aerosol
+!@+   injection experiments (kg m-2 s-1)
       INTEGER :: nso2src_3d=0,iso2volcano=0,iso2volcanoexpl=0
       INTEGER :: iso2directinj=0
       real*8, ALLOCATABLE, DIMENSION(:,:,:,:) :: SO2_src_3D !(im,jm,lm,nso2src_3d)
@@ -43,6 +45,9 @@
 #endif
       real*8, ALLOCATABLE, DIMENSION(:,:,:) :: BC_src_3D !(im,jm,lm)
       real*8, ALLOCATABLE, DIMENSION(:,:,:) :: OC_src_3D !(im,jm,lm)
+#ifdef TRACERS_SAI
+      real*8, ALLOCATABLE, DIMENSION(:,:,:) :: SAI_src_3D !(im,jm,lm)
+#endif
 
       type oxidants
         real*8 :: OH,NO3,O3 ! both for online and offline
@@ -95,6 +100,9 @@
 #endif  /* TRACERS_AEROSOL   S_SOA */
      * nso2src_3d,SO2_src_3D,iso2volcano,iso2volcanoexpl,H2O_src_3d,
      * SU_src_3D,BC_src_3D,OC_src_3D,
+#ifdef TRACERS_SAI
+     * SAI_src_3D,
+#endif
 #ifdef TRACERS_AMP
      * DD1_src_3D,DD2_src_3D,
 #endif
@@ -152,6 +160,10 @@
 #endif
       allocate( BC_src_3D(I_0:I_1,J_0:J_1,lm) )
       allocate( OC_src_3D(I_0:I_1,J_0:J_1,lm) )
+#ifdef TRACERS_SAI
+      allocate( SAI_src_3D(I_0:I_1,J_0:J_1,lm) )
+      SAI_src_3D = 0.d0   ! explicit default (see BrC_wemifactBB bug note)
+#endif
       if (coupled_chem.le.0) then
         allocate(        ohr(I_0:I_1,J_0:J_1,lm),
      *                 dho2r(I_0:I_1,J_0:J_1,lm),

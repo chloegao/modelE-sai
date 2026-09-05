@@ -593,6 +593,11 @@ c          itcon_surf(1,N)=tr_con_diag('Deposition',T)
           itcon_3Dsrc(nChemistry,n)=tr_con_diag('Gas phase src',T,T)
           itcon_3Dsrc(nVolcanic,n)=tr_con_diag('Volcanic src',T,T)
 
+#ifdef TRACERS_SAI
+        case ('SAI')
+          itcon_3Dsrc(nVolcanic,n)=tr_con_diag('Volcanic src',T,T)
+#endif
+
         case ('BCII', 'BCIA', 'BCB', 'OCII', 'OCIA', 'OCB',
      &        'BrC_w', 'BrC_b', 'BrC_t',
      &        'vbsGm2', 'vbsGm1', 'vbsGz',  'vbsGp1', 'vbsGp2',
@@ -1406,6 +1411,26 @@ c gravitational settling of SO4
         jls_ltop(k) = LM
         jls_power(k) = -3
         units_jls(k) = unit_string(jls_power(k),tend_units)
+
+#ifdef TRACERS_SAI
+        case ('SAI')
+c direct (volcanic-slot) injection source of SAI
+        k = k + 1
+        jls_3Dsource(nVolcanic,n) = k
+        sname_jls(k) = trim(trname(n))//'_volcanic_src'
+        lname_jls(k) = trim(trname(n))//' direct injection source'
+        jls_ltop(k) = LM
+        jls_power(k) = 0
+        units_jls(k) = unit_string(jls_power(k),tend_units)
+c gravitational settling of SAI
+        k = k + 1
+        jls_grav(n) = k
+        sname_jls(k) = 'grav_sett_of_'//trim(trname(n))
+        lname_jls(k) = 'Gravitational Settling of '//trim(trname(n))
+        jls_ltop(k) = LM
+        jls_power(k) = -3
+        units_jls(k) = unit_string(jls_power(k),tend_units)
+#endif  /* TRACERS_SAI */
 
         case ('SO4_d1', 'SO4_d2', 'SO4_d3')
 c gas phase source
@@ -2769,6 +2794,17 @@ c#endif
      *                scalediv=dtsrc)
         end select
 
+#ifdef TRACERS_SAI
+      case ('SAI')
+        ijts_3Dsource(nVolcanic,n)=
+     *    ijts_diag(trim(trname(n))//'_volcanic_src',
+     *              trim(trname(n))//' direct injection source',
+     *              'kg m-2 s-1', power=-15,
+     *              scalediv=dtsrc)
+        call set_diag_aod(n)
+        if (diag_fc==2) call set_diag_rf(n)
+#endif  /* TRACERS_SAI */
+
       case ('SO2')
         ijts_3Dsource(nVolcanic,n)=
      *    ijts_diag(trim(trname(n))//'_volcanic_src',
@@ -4055,7 +4091,7 @@ C**** output fraction of sulfate that contains NH4
 #ifdef SAVE_AEROSOL_3DMASS_FOR_NINT
         CASE('Clay','Silt1','Silt2','Silt3','Silt4','Silt5', 'isopp1a'
      $       ,'isopp2a','apinp1a','apinp2a','OCB','OCII','OCIA','BCB'
-     $       ,'BrC_w','BrC_b', 'BrC_t'
+     $       ,'BrC_w','BrC_b', 'BrC_t', 'SAI'
      $       ,'BCII' ,'BCIA', 'SO4','MSA','NO3p','NH4','seasalt1'
      $       ,'seasalt2','SO4_d1','SO4_d2','SO4_d3','N_d1','N_d2'
      $       ,'N_d3')
@@ -5305,7 +5341,7 @@ c**** earth
         case('MSA', 'SO2', 'SO4', 'SO4_d1', 'SO4_d2', 'SO4_d3',
      *         'N_d1','N_d2','N_d3','NH3','NH4','NO3p',
      *         'BCII', 'BCIA', 'BCB', 'OCII', 'OCIA', 'OCB', 'H2O2_s',
-     *         'BrC_w', 'BrC_b', 'BrC_t',
+     *         'BrC_w', 'BrC_b', 'BrC_t', 'SAI',
      *         'seasalt1', 'seasalt2',
      *         'M_NO3   ','M_NH4   ','M_H2O   ','N_AKK_1 ',
      *         'N_ACC_1 ','M_DD1_SU','N_DD1_1 ',
@@ -5664,9 +5700,15 @@ C**** Note this routine must always exist (but can be a dummy routine)
 #endif
       use TRACER_COM, only: direct_inject_BC
       use TRACER_COM, only: direct_inject_OC
+#ifdef TRACERS_SAI
+      use TRACER_COM, only: direct_inject_SAI
+#endif
       use TRACER_COM, only: nVolcanic
       USE AEROSOL_SOURCES, only: so2_src_3d,iso2directinj,H2O_src_3d
       USE AEROSOL_SOURCES, only: su_src_3d,bc_src_3d,oc_src_3d
+#ifdef TRACERS_SAI
+      USE AEROSOL_SOURCES, only: sai_src_3d
+#endif
 #ifdef TRACERS_AMP
       USE AEROSOL_SOURCES, only: dd1_src_3d,dd2_src_3d
 #endif
@@ -5948,6 +5990,9 @@ c     which the fluxes go, expects the fluxes to be in kg/m^2/s.
 #endif
         BC_src_3d(:,:,:)=0.d0
         OC_src_3d(:,:,:)=0.d0
+#ifdef TRACERS_SAI
+        SAI_src_3d(:,:,:)=0.d0
+#endif
         if (iso2directinj>0) so2_src_3d(:,:,:,iso2directinj)=0.d0
 
       if (direct_inject_num>0) then
@@ -6072,6 +6117,10 @@ c     which the fluxes go, expects the fluxes to be in kg/m^2/s.
      &         direct_inject_BC(ex)*inj_mult ! kg m-2 s-1
              OC_src_3d(i,j,ll)=OC_src_3d(i,j,ll)+
      &         direct_inject_OC(ex)*inj_mult ! kg m-2 s-1
+#ifdef TRACERS_SAI
+             SAI_src_3d(i,j,ll)=SAI_src_3d(i,j,ll)+
+     &         direct_inject_SAI(ex)*inj_mult ! kg m-2 s-1
+#endif
            enddo
 
 ! write confirmation of injection to .PRT file (deleted w/ restart)
@@ -6096,6 +6145,10 @@ c     which the fluxes go, expects the fluxes to be in kg/m^2/s.
      .     direct_inject_H2O(ex),' Tg H2O',' distributed between ',
      .     direct_inject_bot(ex),' and ',direct_inject_top(ex),
      .     'meters altitude'
+#ifdef TRACERS_SAI
+          write(*,'(a,es12.4,a)') ' direct_inject additionally: ',
+     .     direct_inject_SAI(ex),' Tg SAI (strat aerosol injection)'
+#endif
           if (ipoint>0 .and. jpoint>0) then
             write(*,'(a,es12.4,a,es12.4,a)')
      .      ' at coordinates ',direct_inject_pointlat(ex),
@@ -7697,6 +7750,9 @@ C****
       USE AEROSOL_SOURCES, only: iso2directinj
       USE AEROSOL_SOURCES, only: so2_src_3d,nso2src_3d,H2O_src_3d
       USE AEROSOL_SOURCES, only: su_src_3d
+#ifdef TRACERS_SAI
+      USE AEROSOL_SOURCES, only: sai_src_3d
+#endif
 #ifdef TRACERS_AMP
       USE AEROSOL_SOURCES, only: dd1_src_3d,dd2_src_3d
 #endif
@@ -7775,7 +7831,7 @@ C**** All sources are saved as kg s-1
 
         select case(trname(n))
         case ('SO2','SO4','M_ACC_SU','M_AKK_SU','ASO4__01','Water',
-     &    'M_DD1_DU','M_DD2_DU')
+     &    'M_DD1_DU','M_DD2_DU','SAI')
           select case(trname(n))
           case ('SO2','SO4','M_ACC_SU','M_AKK_SU')
             do k=1,nso2src_3d
@@ -7797,6 +7853,14 @@ C**** All sources are saved as kg s-1
      &          *hour_fact
             end select
             call apply_tracer_3Dsource(i,j,nVolcanic,n)
+
+#ifdef TRACERS_SAI
+          case ('SAI')
+            tr3Dsource(:,nVolcanic,n)= ! direct injection / no src_fact
+     &        tr3Dsource(:,nVolcanic,n)+sai_src_3d(i,j,:)
+     &        *hour_fact
+            call apply_tracer_3Dsource(i,j,nVolcanic,n)
+#endif  /* TRACERS_SAI */
 
 #ifdef TRACERS_WATER
           case ('Water')
