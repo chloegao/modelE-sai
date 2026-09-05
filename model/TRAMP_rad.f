@@ -925,21 +925,25 @@ c         NUMB_LEV(l,n) = NI(n)* 0.7853 * (1.e-6*DG_WET(n))**2   ! [#/layer]
           Volfrac(n,s) = VMass(n,s) / (Sum(VMass(n,:)) + TINYNUMER)
           dry_Vf_LEV(l,n,s) = VMass(n,s) / (Sum(VMass(n,1:6)) + TINYNUMER)
       ! Core Shell Composition
-          if (n.eq.14) then     ! BOC
+c     Modes are selected by name, not by index. The mode numbering differs
+c     between mechanisms: M1 has 16 modes (..10 BC1, 11 BC2, 12 BC3, 13 DBC,
+c     14 BOC, 15 BCS, 16 MXX) while M9/M10 have 15 (..10 BC1, 11 BC2, 12 OCS,
+c     13 BOC, 14 BCS, 15 MXX). The former hard-coded indices 10-12, 14 and 15
+c     therefore addressed OCS, BCS and MXX under M9/M10, and left the real BOC
+c     untreated. MODE_NAME comes from AERO_CONFIG as MNAME(IMODES), so it
+c     follows the active mechanism; the Maxwell Garnett block below already
+c     selects this same way. Formulae are unchanged, so M1 results are
+c     bit-identical.
+          select case (MODE_NAME(n))
+          case ('BOC')
             MIX_OC(l,n) = VMass(n,3) / (VMass(n,1) + VMass(n,2) + VMass(n,3) + VMass(n,7) + TINYNUMER)
             MIX_SU(l,n) = VMass(n,1) / (VMass(n,1) + VMass(n,2) + VMass(n,3) + VMass(n,7) + TINYNUMER)
             MIX_AQ(l,n) = VMass(n,7) / (VMass(n,1) + VMass(n,2) + VMass(n,3) + VMass(n,7) + TINYNUMER)
-          endif
-          if (n.eq.15) then     ! BCS
+          case ('BC1','BC2','BC3','BCS')
             MIX_OC(l,n) = 0.d0
             MIX_SU(l,n) = VMass(n,1) / (VMass(n,1) + VMass(n,2) + VMass(n,7) + TINYNUMER)
             MIX_AQ(l,n) = VMass(n,7) / (VMass(n,1) + VMass(n,2) + VMass(n,7) + TINYNUMER)
-          endif
-          if (n.ge.10.and.n.le.12) then ! BC123
-            MIX_OC(l,n) = 0.d0
-            MIX_SU(l,n) = VMass(n,1) / (VMass(n,1) + VMass(n,2) + VMass(n,7) + TINYNUMER)
-            MIX_AQ(l,n) = VMass(n,7) / (VMass(n,1) + VMass(n,2) + VMass(n,7) + TINYNUMER)
-          endif
+          end select
         ENDDO
       ENDDO
  
