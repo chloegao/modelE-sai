@@ -23,6 +23,21 @@ endif
 # mode cannot parse the current SDK headers.
 CPP_C = clang -E -P
 
+# The Fortran and C compilers here can target different architectures: a
+# Homebrew gfortran under /usr/local is an x86_64 (Rosetta) build while
+# /usr/bin/gcc is native arm64. Objects of different architectures cannot be
+# combined into one static archive -
+#   ranlib: archive member cputype (16777228) does not match previous archive
+#           members cputype (16777223) (all members must match)
+# - and -m64 does not switch a native arm64 clang over. Pin the C compiler to
+# whatever the Fortran compiler targets.
+ifeq ($(COMPILER),gfortran)
+  FC_ARCH := $(shell gfortran -dumpmachine 2>/dev/null | sed 's/-.*//;s/aarch64/arm64/')
+  ifneq ($(FC_ARCH),)
+    CFLAGS += -arch $(FC_ARCH)
+  endif
+endif
+
 CPPFLAGS = -DMACHINE_MAC
 
 # this is a hack to work around Xcode/MacPorts bug with Xcode 11.x.x

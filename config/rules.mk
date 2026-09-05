@@ -432,7 +432,7 @@ endif
 	 $(CPP) $(CPPFLAGS) $< > $@
 
 %.o: %.c
-	$(CC) -c -O2 $(M64) $<
+	$(CC) -c -O2 $(M64) $(CFLAGS) $<
 
 %.f: %.m4f
 	-rm -f $@
