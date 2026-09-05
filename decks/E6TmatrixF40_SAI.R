@@ -138,7 +138,7 @@ tracers
 Ent
 
 Component Options:
-OPTS_Ent = ONLINE=YES PS_MODEL=FBB PFT_MODEL=ENT /* needed for "Ent" only */
+OPTS_Ent = ONLINE=YES PS_MODEL=FBB PFT_MODEL=ENT
 OPTS_dd2d = NC_IO=PNETCDF
 
 Data input files:
