@@ -1,6 +1,6 @@
 # Darwin - specific options
 
-CPP = cpp -P -traditional
+CPP = clang -E -x c -P -traditional
 CPPFLAGS = -DMACHINE_MAC
 
 # this is a hack to work around Xcode/MacPorts bug with Xcode 11.x.x

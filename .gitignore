@@ -21,3 +21,11 @@ spconfig.py
 *.icloud
 * 2.*
 * 3.*
+
+# build intermediates left in the source tree by the depend step
+*.f.cpp
+*.F90.cpp
+.depend*
+.current_options
+.current_srcs
+.liblist
