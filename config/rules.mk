@@ -450,7 +450,7 @@ endif
 	 $(CPP) $(CPPFLAGS) $< > $@
 
 %.o: %.c
-	$(CC) -c -O2 $(M64) $(CFLAGS) $<
+	$(CC) -c -O2 $(M64) $(CFLAGS_MACHINE) $<
 
 %.f: %.m4f
 	-rm -f $@

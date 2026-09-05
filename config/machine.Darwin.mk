@@ -30,11 +30,13 @@ CPP_C = clang -E -P
 #   ranlib: archive member cputype (16777228) does not match previous archive
 #           members cputype (16777223) (all members must match)
 # - and -m64 does not switch a native arm64 clang over. Pin the C compiler to
-# whatever the Fortran compiler targets.
+# whatever the Fortran compiler targets. CFLAGS_MACHINE rather than CFLAGS:
+# CFLAGS is a name the environment may already define (module systems set it),
+# and it must not leak into the build on platforms that never set it here.
 ifeq ($(COMPILER),gfortran)
   FC_ARCH := $(shell gfortran -dumpmachine 2>/dev/null | sed 's/-.*//;s/aarch64/arm64/')
   ifneq ($(FC_ARCH),)
-    CFLAGS += -arch $(FC_ARCH)
+    CFLAGS_MACHINE += -arch $(FC_ARCH)
   endif
 endif
 
