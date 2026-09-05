@@ -267,30 +267,39 @@ c       -> read this in                       MODE_NAME
            CHARACTER(LEN=3), SAVE :: MODE_NAME(16)
       DATA MODE_NAME(1:16)/'AKK','ACC','DD1','DS1','DD2','DS2','SSA','SSC','OCC','BC1','BC2','BC3','DBC','BOC','BCS','MXX'/
 #endif
+c SAI repurposing of DD2/DS2 as calcite (CaCO3) injection particle:
+c - CORE_CLASS for DD2/DS2 deliberately stays 6 (dust LW absorption
+c   tables). No calcite LW table exists in the model; the dust LW class
+c   is an acceptable placeholder for a mostly-scattering coarse mineral.
+c - REFF_mode for DD2 and DS2 set to 0.28 um (the 275 nm calcite
+c   injection radius, Keith et al. 2016) in the M1/M9/M10 DATA blocks
+c   below; used only for the precomputed LW TAB (LWaerosolCalcs==0).
+c - The OMA twin routine SETOMA above is untouched: this build runs
+c   SETAMP under TRACERS_AMP, and SETOMA has no per-mode dust routing.
 #if (defined TRACERS_AMP_M1) || (defined USE_OFFLINE_AEROSOLS)
 c                        AKK  ACC  DD1  DS1  DD2  DS2  SSA  SSC  OCC  BC1  BC2  BC3  DBC  BOC  BCS  MXX
 c                        1    2    3    4    5    6    7    8    9    10   11   12   13   14   15   16
       DATA CORE_CLASS   /1,   1,   6,   6,   6,   6,   2,   2,   4,   5,   5,   5,   6,   4,   5,   6/
 
       DATA SHELL_CLASS  /0,   0,   0,   0,   0,   0,   0,   0,   1,   0,   0,   0,   0,   1,   1,   2/
-      DATA REFF_mode / 0.026D+00, 0.075D+00, 1.160D+00, 2.000D+00, 1.260D+00,
-     +                 2.00D+00 , 0.12D+00 , 2.D+00   , 0.075D+00, 0.050D+00,  
+      DATA REFF_mode / 0.026D+00, 0.075D+00, 1.160D+00, 2.000D+00, 0.280D+00,  ! SAI: DD2 (5th) 1.26->0.28 um calcite
+     +                 0.28D+00 , 0.12D+00 , 2.D+00   , 0.075D+00, 0.050D+00,  ! SAI: DS2 (1st) 2.0->0.28 um calcite  
      +                 0.100D+00, 0.100D+00, 0.330D+00, 0.100D+00, 0.070D+00, 0.100D+00/    
 #elif defined TRACERS_AMP_M9
 c                        AKK  ACC  DD1  DS1  DD2  DS2  SSA  SSC  OCC  BC1  BC2  OCS  BOC  BCS  MXX
 c                        1    2    3    4    5    6    7    8    9    10   11   12   13   14   15
       DATA CORE_CLASS   /1,   1,   6,   6,   6,   6,   2,   2,   4,   5,   5,   4,   4,   5,   6/
       DATA SHELL_CLASS  /0,   0,   0,   0,   0,   0,   0,   0,   1,   0,   0,   0,   1,   1,   2/
-      DATA REFF_mode / 0.026D+00, 0.075D+00, 1.160D+00, 2.000D+00, 1.260D+00,
-     +                 2.00D+00 , 0.12D+00 , 2.D+00   , 0.075D+00, 0.050D+00,  
+      DATA REFF_mode / 0.026D+00, 0.075D+00, 1.160D+00, 2.000D+00, 0.280D+00,  ! SAI: DD2 (5th) 1.26->0.28 um calcite
+     +                 0.28D+00 , 0.12D+00 , 2.D+00   , 0.075D+00, 0.050D+00,  ! SAI: DS2 (1st) 2.0->0.28 um calcite  
      +                 0.100D+00, 0.075D+00, 0.100D+00, 0.070D+00, 0.100D+00/
 #elif defined TRACERS_AMP_M10
 c                        AKK  ACC  DD1  DS1  DD2  DS2  SSA  SSC  OCC  BC1  BC2  OCS  BOC  BCS  MXX
 c                        1    2    3    4    5    6    7    8    9    10   11   12   13   14   15
       DATA CORE_CLASS   /1,   1,   6,   6,   6,   6,   2,   2,   4,   5,   5,   4,   4,   5,   6/
       DATA SHELL_CLASS  /0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0/
-      DATA REFF_mode / 0.026D+00, 0.075D+00, 1.160D+00, 2.000D+00, 1.260D+00,
-     +                 2.00D+00 , 0.12D+00 , 2.D+00   , 0.075D+00, 0.050D+00,
+      DATA REFF_mode / 0.026D+00, 0.075D+00, 1.160D+00, 2.000D+00, 0.280D+00,  ! SAI: DD2 (5th) 1.26->0.28 um calcite
+     +                 0.28D+00 , 0.12D+00 , 2.D+00   , 0.075D+00, 0.050D+00,  ! SAI: DS2 (1st) 2.0->0.28 um calcite
      +                 0.100D+00, 0.075D+00, 0.100D+00, 0.070D+00, 0.100D+00/
 #elif defined TRACERS_AMP_M11
 c                        AKK  ACC
@@ -626,7 +635,9 @@ c -----------------------------------------------------------------
       ! Local
       INTEGER n,w,s,nAMP,k
 #if (defined TRACERS_AMP) || (defined USE_OFFLINE_AEROSOLS)
-      REAL*8,     DIMENSION(nmodes,7) :: VolFrac, VMass
+c SAI: 2nd dim extended 7->8. Species slots: 1=SU 2=BC 3=OC 4=DU 5=SS
+c      6=NO3 7=H2O 8=calcite (CaCO3, repurposed DD2/DS2 SAI particle)
+      REAL*8,     DIMENSION(nmodes,8) :: VolFrac, VMass
 #endif
       REAL*8                          :: H2O, NO3, NH4, c
 #if (defined TRACERS_AMP) || (defined TRACERS_NITRATE)
@@ -635,7 +646,10 @@ c -----------------------------------------------------------------
       REAL*8                          :: rh, trrwet,ratio_so4_to_nh4
       REAL*8, parameter :: c1=0.7674d0, c2=3.079d0, c3=2.573d-11,
      *     c4=-1.424d0
-      REAL(8), PARAMETER :: TINYNUMER = 1.0D-30 
+      REAL(8), PARAMETER :: TINYNUMER = 1.0D-30
+c SAI: density of calcite (CaCO3) [kg/m^3] for converting the repurposed
+c      DD2/DS2 "dust" tracer mass to particle volume (cf DENS_DUST=2.60D+03)
+      REAL(8), PARAMETER :: DENS_CACO3 = 2.71D+03
 #if (defined TRACERS_BrC)
 #if (defined TRACERS_BIOGENIC_BrC)
 #if (defined TRACERS_AEROSOLS_SOA)
@@ -742,6 +756,20 @@ c However, may be similar enough to not be worth the computational efficiency lo
       DATA Ri_H2SO4/(1.344,  0.087), (1.390, 7.7e-4),
      &              (1.409, 4.9e-5), (1.420, 2.2e-6),
      &              (1.427, 1.1e-7), (1.435, 1.1e-8)/
+
+c SAI calcite (CaCO3), placeholder band-averaged values - refs:
+c Ghosh 1999, Long et al. 1993; Mie table lookup snaps Re to nearest
+c grid value (grid 1.25-1.90 step 0.05), so 1.59 is used in all 6 solar
+c bands with a non-absorbing imaginary part.
+c NOTE: kept as a separate 6-element vector instead of an 8th column of
+c Ri because under TRACERS_BrC/TRACERS_AEROSOLS_SOA the Ri array already
+c has CPP-dependent widths (6,10)/(6,12)/(6,14) whose column 8 is BrC_w;
+c a standalone vector is unambiguous under every CPP combination. It is
+c applied to VolFrac/VMass species slot 8 (see loops below).
+      COMPLEX*8, DIMENSION(6)        :: Ri_CACO3
+      DATA Ri_CACO3/(1.59, 1.0e-8), (1.59, 1.0e-8),
+     &              (1.59, 1.0e-8), (1.59, 1.0e-8),
+     &              (1.59, 1.0e-8), (1.59, 1.0e-8)/
 
 c Growth factor per oma radiation specie: Based on Petters & Kreidenweis ACP 2007
 c for SO4, and sea salt, other estimates used for NO3/OC/BC and dust. 
@@ -882,7 +910,17 @@ c         NUMB_LEV(l,n) = NI(n)* 0.7853 * (1.e-6*DG_WET(n))**2   ! [#/layer]
                case ('OC')
                   VMass(AMP_MODES_MAP(nAMP),3) =VMass(AMP_MODES_MAP(nAMP),3)+ trm(i,j,l,n)/DENS_OCAR
                case ('DU')
-                  VMass(AMP_MODES_MAP(nAMP),4) =trm(i,j,l,n)/DENS_DUST
+c SAI: modes DD2 and DS2 are repurposed as the calcite (CaCO3) SAI
+c particle; route their "dust" volume to species slot 8 (calcite optics,
+c density 2.71). Both DD2 AND DS2 are routed because DD2 flips to DS2
+c once its inorganic coating exceeds MIMR_DDD (TRAMP_matrix.f). Dust in
+c all other modes (DD1/DS1/DBC/MXX) keeps standard dust optics (slot 4).
+                  if (trname(n).eq.'M_DD2_DU' .or.
+     &                trname(n).eq.'M_DS2_DU') then
+                    VMass(AMP_MODES_MAP(nAMP),8) =trm(i,j,l,n)/DENS_CACO3
+                  else
+                    VMass(AMP_MODES_MAP(nAMP),4) =trm(i,j,l,n)/DENS_DUST
+                  endif
                case ('SS')
                   VMass(AMP_MODES_MAP(nAMP),5) =trm(i,j,l,n)/DENS_SEAS
                end select
@@ -920,10 +958,16 @@ c         NUMB_LEV(l,n) = NI(n)* 0.7853 * (1.e-6*DG_WET(n))**2   ! [#/layer]
 
 #endif   /* After that code should work for all cases */
 
-      DO s=1,7  ! loop over species 
+c SAI: species loop extended 1:7 -> 1:8 (8 = calcite).
+c Dry-volume normalization: slot 7 is H2O (the only wet species), so the
+c dry volume is the sum over slots 1:6 PLUS slot 8 (calcite is dry);
+c we keep the storage order and add VMass(n,8) to the 1:6 sum rather
+c than reordering the species columns.
+      DO s=1,8  ! loop over species
         DO n=1,nmodes           ! loop over modes
           Volfrac(n,s) = VMass(n,s) / (Sum(VMass(n,:)) + TINYNUMER)
-          dry_Vf_LEV(l,n,s) = VMass(n,s) / (Sum(VMass(n,1:6)) + TINYNUMER)
+          dry_Vf_LEV(l,n,s) = VMass(n,s) /
+     &         (Sum(VMass(n,1:6)) + VMass(n,8) + TINYNUMER)
       ! Core Shell Composition
           if (n.eq.14) then     ! BOC
             MIX_OC(l,n) = VMass(n,3) / (VMass(n,1) + VMass(n,2) + VMass(n,3) + VMass(n,7) + TINYNUMER)
@@ -946,13 +990,22 @@ c         NUMB_LEV(l,n) = NI(n)* 0.7853 * (1.e-6*DG_WET(n))**2   ! [#/layer]
       ! + Refractive Index of Aerosol mix per mode and wavelength
       
       RindexAMP(l,:,:) = 0.d0
-      DO s=1,7                  ! loop over species 
+c SAI: species loop extended 1:7 -> 1:8; s=8 (calcite) uses the separate
+c Ri_CACO3 vector (see its declaration above for why it is not a column
+c of Ri).
+      DO s=1,8                  ! loop over species
         ! for sulfate must split between h2so4 and amm sulf
         if (s.eq.1 .and. separate_h2so4p==1) then
           DO w=1,6                ! loop over wavelength
             DO n=1,nmodes         ! loop over modes
               RindexAMP(l,n,w) = RindexAMP(l,n,w) + Volfrac(n,1) *
      &          (Ri(w,1)*frac_so4_has_nh4(l) + Ri_H2SO4(w)*(1.d0-frac_so4_has_nh4(l)))
+            ENDDO
+          ENDDO
+        else if (s.eq.8) then    ! SAI calcite
+          DO w=1,6                ! loop over wavelength
+            DO n=1,nmodes         ! loop over modes
+              RindexAMP(l,n,w) = RindexAMP(l,n,w) + ( Volfrac(n,8) * Ri_CACO3(w))
             ENDDO
           ENDDO
         else
@@ -974,8 +1027,12 @@ c         NUMB_LEV(l,n) = NI(n)* 0.7853 * (1.e-6*DG_WET(n))**2   ! [#/layer]
              DO s=3,7                  ! loop over species other that BC
              M_host = M_host + ( Volfrac(n,s) * Ri(w,s))
              ENDDO
+c SAI: include calcite (slot 8) in the host mixture for volume closure.
+c Volfrac(n,8) is zero for all BC-containing modes handled here, since
+c calcite lives only in DD2/DS2, so this is a no-op in practice.
+             M_host = M_host + ( Volfrac(n,8) * Ri_CACO3(w))
              V_bc   = Volfrac(n,2)
-             V_host = Volfrac(n,1)+Volfrac(n,3)+Volfrac(n,4)+Volfrac(n,5)+Volfrac(n,6)+Volfrac(n,7)
+             V_host = Volfrac(n,1)+Volfrac(n,3)+Volfrac(n,4)+Volfrac(n,5)+Volfrac(n,6)+Volfrac(n,7)+Volfrac(n,8)
              M_mg = M_host**2  * (M_bc**2 + 2.d0 * M_host**2 + 2.d0 * V_bc * (M_bc    - M_host   ) ) 
      +                         / (M_bc**2 + 2.d0 * M_host**2 -        V_host*(M_bc**2 - M_host**2) )
 

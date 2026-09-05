@@ -298,6 +298,9 @@ c**** output
       use trdust_mod,only : nDustBins, CWiCub, FClWiCub, FSiWiCub,
      &     CWiPdf, scaleDustEmission, fracClayPDFscheme,
      &     fracSiltPDFscheme, imDust
+#ifdef TRACERS_AMP
+      use trdust_mod, only : zeroDustEmisDD2
+#endif
 
       IMPLICIT NONE
 
@@ -462,6 +465,14 @@ c**** mineral fractions of dust aerosols
           ELSE IF (imDust == 2) THEN
             frtrac=FSiWiCub*frsilt*frtrac
           END IF
+#ifdef TRACERS_AMP
+c**** SAI experiment option: suppress natural soil dust emission into
+c**** the MATRIX coarse dust mode DD2 (bins 3-4 = silt2/silt3), leaving
+c**** DD2/DS2 to carry only directly injected calcite. Bins 1-2 (DD1)
+c**** are unaffected. Under TRACERS_AMP, n here is the dust bin index
+c**** (see PBL.f: M_DD1_DU emits bins 1:2, M_DD2_DU emits bins 3:4).
+          if ( zeroDustEmisDD2 == 1 .and. n >= 3 ) frtrac = 0.d0
+#endif
         END SELECT
 
         select case ( imDust )
@@ -549,6 +560,11 @@ c**** prescribed (AeroCom) dust emission
 
 #if (defined TRACERS_AMP) || (defined TRACERS_TOMAS)
         dsrcflx = frtrac * d_dust( n )
+#ifdef TRACERS_AMP
+c**** SAI option: zero prescribed (AeroCom, imDust=1) natural dust
+c**** emission into MATRIX coarse mode DD2 (bins 3-4); see above.
+        if ( zeroDustEmisDD2 == 1 .and. n >= 3 ) dsrcflx = 0.d0
+#endif
 #endif
 
 #endif

@@ -86,7 +86,14 @@
       !-------------------------------------------------------------------------------------------------------------------
       ! The Maximum Inorganic Volume Fraction (MIVF) in modes DD1, DD2, BC1, and BC2.
       !-------------------------------------------------------------------------------------------------------------------
-      REAL(8), PARAMETER :: MIVF_DDD = 0.05D+00   ! 
+      REAL(8), PARAMETER :: MIVF_DDD = 0.05D+00   !
+c SAI note: MIVF_DDD (via MIMR_DDD below, ~2.8% inorganic mass ratio) is
+c the threshold at which coated DD2 transfers to DS2 (TRAMP_matrix.f).
+c MIMR_DDD = (1.40/2.60)*0.05/0.95 = 0.028, i.e. ~2.8% inorganic mass.
+c Left at the default: the injected calcite will migrate DD2->DS2 as it
+c acquires sulfate coating, which is physically reasonable; after the
+c SAI edits both modes share the same calcite optics and 0.55 um size,
+c so the transfer does not change the radiative treatment.
       REAL(8), PARAMETER :: MIVF_BC1 = 0.05D+00   !- These two are from MZJ 2002, "Analysis ..."
       REAL(8), PARAMETER :: MIVF_BC2 = 0.20D+00   !/
       !-------------------------------------------------------------------------------------------------------------------
@@ -164,10 +171,16 @@ c     &               80.81, 85.58, 90./
       ! converted to lognormal geometric mean diameters for an assumed geometric standard deviation of 1.8 for the
       ! smaller (accumulation) size class and a standard deviation of 2.0 for the larger (coarse) size class. 
        !-------------------------------------------------------------------------------------------------------------------
-      REAL(8), PARAMETER :: DG_DD1 = 0.580D+00 *2.     ! set to match GISS dust emissions for average of sizes 1 & 2         
-      REAL(8), PARAMETER :: DG_DD2 = 1.000D+00 *2.     ! set to match GISS dust emissions for average of sizes 3 & 4         
-      REAL(8), PARAMETER :: DG_DS1 = 0.580D+00 *2.     ! set to match GISS dust emissions for average of sizes 1 & 2         
-      REAL(8), PARAMETER :: DG_DS2 = 1.00D+00 *2.     ! set to match GISS dust emissions for average of sizes 3 & 4         
+      REAL(8), PARAMETER :: DG_DD1 = 0.580D+00 *2.     ! set to match GISS dust emissions for average of sizes 1 & 2
+c SAI repurposing: modes DD2/DS2 carry the injected calcite (CaCO3)
+c stratospheric aerosol. Geometric mean diameter set to 0.55 um
+c (= 275 nm radius, Keith et al. 2016 calcite size); was 2.0 um coarse
+c dust. Sigma (SG_DD2/SG_DS2 = 1.8 below) is left at the dust default.
+c DS2 is aligned with DD2 because DD2 mass transfers to DS2 once coated
+c (TRAMP_matrix.f DD2->DS2 flip at MIMR_DDD inorganic mass ratio).
+      REAL(8), PARAMETER :: DG_DD2 = 0.55D+00     ! SAI calcite (was 1.000D+00 *2.)
+      REAL(8), PARAMETER :: DG_DS1 = 0.580D+00 *2.     ! set to match GISS dust emissions for average of sizes 1 & 2
+      REAL(8), PARAMETER :: DG_DS2 = 0.55D+00     ! SAI calcite (was 1.00D+00 *2.)
       REAL(8), PARAMETER :: DG_SSA = 0.440D+00 *2.     ! set to match GISS sea salt emissions         
       REAL(8), PARAMETER :: DG_SSC = 1.D+00 *2.     ! set to match GISS sea salt emissions         
       REAL(8), PARAMETER :: DG_SSS = 0.690D+00 *2.     ! 10:1 average of modes SSA and SSC
@@ -223,10 +236,16 @@ c     &               80.81, 85.58, 90./
       ! converted to lognormal geometric mean diameters for an assumed geometric standard deviation of 1.8 for the
       ! smaller (accumulation) size class and a standard deviation of 2.0 for the larger (coarse) size class. 
       !-------------------------------------------------------------------------------------------------------------------
-      REAL(8), PARAMETER :: DG_DD1_EMIS = 0.580D+00 *2.     ! set to match GISS dust emissions for average of sizes 1 & 2         
-      REAL(8), PARAMETER :: DG_DD2_EMIS = 1.000D+00 *2.     ! set to match GISS dust emissions for average of sizes 3 & 4         
-      REAL(8), PARAMETER :: DG_DS1_EMIS = 0.580D+00 *2.     ! set to match GISS dust emissions for average of sizes 1 & 2         
-      REAL(8), PARAMETER :: DG_DS2_EMIS = 1.00D+00 *2.     ! set to match GISS dust emissions for average of sizes 3 & 4         
+      REAL(8), PARAMETER :: DG_DD1_EMIS = 0.580D+00 *2.     ! set to match GISS dust emissions for average of sizes 1 & 2
+c SAI repurposing: emitted-size lognormal for DD2 (and DS2, for
+c consistency; DS2 receives no primary emissions) set to 0.55 um
+c geometric mean diameter = 275 nm radius calcite (Keith et al. 2016).
+c This feeds DP0_EMIS/RECIP_PART_MASS (TRAMP_setup.f SETUP_EMIS), so the
+c particle NUMBER emitted per kg of direct_inject_DD2 mass reflects the
+c small injection size. SG_DD2_EMIS stays 1.8 (dust default).
+      REAL(8), PARAMETER :: DG_DD2_EMIS = 0.55D+00     ! SAI calcite (was 1.000D+00 *2.)
+      REAL(8), PARAMETER :: DG_DS1_EMIS = 0.580D+00 *2.     ! set to match GISS dust emissions for average of sizes 1 & 2
+      REAL(8), PARAMETER :: DG_DS2_EMIS = 0.55D+00     ! SAI calcite (was 1.00D+00 *2.)
       REAL(8), PARAMETER :: DG_SSA_EMIS = 0.440D+00 *2     ! set to match GISS sea salt emissions         
       REAL(8), PARAMETER :: DG_SSC_EMIS = 1.000D+00 *2.     ! set to match GISS sea salt emissions         
       REAL(8), PARAMETER :: DG_SSS_EMIS = 0.690D+00 *2.     ! 10:1 average of modes SSA and SSC
@@ -320,6 +339,11 @@ c     &               80.81, 85.58, 90./
       REAL(8), PARAMETER :: EMIS_DENS_BCAR = 1.70D+00   ! [g/cm^3] - Ghan et al. (2001) - MIRAGE
       REAL(8), PARAMETER :: EMIS_DENS_OCAR = 1.00D+00   ! [g/cm^3] - Ghan et al. (2001) - MIRAGE
       REAL(8), PARAMETER :: EMIS_DENS_DUST = 2.60D+00   ! [g/cm^3] - Ghan et al. (2001) - MIRAGE
+c SAI note: EMIS_DENS_DUST and DENS_DUST are deliberately NOT changed
+c for the DD2/DS2 calcite repurposing. Calcite is 2.71 g/cm^3, i.e. the
+c dust value understates it by ~4%; this documented approximation only
+c affects mass-to-number/volume conversions in the microphysics. The
+c radiation code (TRAMP_rad.f) uses the correct 2.71 for calcite volume.
       REAL(8), PARAMETER :: EMIS_DENS_SEAS = 2.165D+00  ! [g/cm^3] - NaCl
       REAL(8), PARAMETER :: EMIS_DENS_BOCC = 0.50D+00   ! [g/cm^3] - average
      &                                     * ( EMIS_DENS_BCAR + EMIS_DENS_OCAR ) 
@@ -355,6 +379,8 @@ c     &               80.81, 85.58, 90./
       ! The above MIVF values are converted to MIMR values for computational efficiency.
       ! The volume of inorganic coating is converted to mass using the default ambient aerosol density.
       !-------------------------------------------------------------------------------------------------------------------
+c SAI note: MIMR_DDD (~2.8%) governs the DD2->DS2 coating flip; left at
+c default (see extended note at MIVF_DDD above).
       REAL(8), PARAMETER :: MIMR_DDD = ( DENSP / EMIS_DENS_DUST )
      &                               * MIVF_DDD / ( 1.0D+00 - MIVF_DDD )
       REAL(8), PARAMETER :: MIMR_BC1 = ( DENSP / EMIS_DENS_BCAR )

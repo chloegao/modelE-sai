@@ -291,6 +291,9 @@
       USE trdust_mod, only: imDust
 #endif
 #ifdef TRACERS_AMP
+      USE trdust_mod, only: zeroDustEmisDD2
+#endif
+#ifdef TRACERS_AMP
       use TRACER_COM, only: direct_inject_DD1
       use TRACER_COM, only: direct_inject_DD2
 #endif
@@ -636,6 +639,11 @@
 #if (defined TRACERS_DUST) || (defined TRACERS_MINERALS) ||\
     (defined TRACERS_AMP) || (defined TRACERS_TOMAS) 
       call sync_param('imDUST',imDUST)
+#endif
+#ifdef TRACERS_AMP
+! SAI experiment option: suppress natural dust emission into MATRIX
+! coarse dust mode DD2 (see TRDUST_COM.f / TRDUST.f)
+      call sync_param('zeroDustEmisDD2',zeroDustEmisDD2)
 #endif
 
       call initializeOldTracers(tracers, setDefaultSpec)

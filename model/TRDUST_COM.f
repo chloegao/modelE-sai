@@ -80,6 +80,14 @@ c****
 !@+               5: same as 4, but no dust emission where no AeroCom sources
       integer :: imDust=0
 
+!@dbparam zeroDustEmisDD2: (TRACERS_AMP/MATRIX only) 1: suppress natural
+!@+       soil dust emission into the MATRIX coarse dust mode DD2 (GISS
+!@+       dust bins 3-4, i.e. silt2 and silt3), so that modes DD2/DS2
+!@+       carry only directly injected material (SAI calcite experiment).
+!@+       Natural emission into DD1 (bins 1-2: clay, silt1) is unaffected.
+!@+       0 (default): normal natural dust emission into DD2.
+      integer :: zeroDustEmisDD2=0
+
 c**** legacy emission code (Tegen, I. and R. Miller, JGR (1998))
 c**** declarations for emission scheme using third power of wind speed
 c****

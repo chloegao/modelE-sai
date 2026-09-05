@@ -28,7 +28,9 @@ c                                                                     (in OMA, r
       REAL*8, DIMENSION(LM,nmodes)       :: Reff_LEV, NUMB_LEV
       REAL*8, DIMENSION(LM,nmodes)       :: MIX_OC, MIX_SU, MIX_AQ
       COMPLEX*8, DIMENSION(LM,nmodes,6)  :: RindexAMP
-      REAL*8, DIMENSION(LM,nmodes,7)     :: dry_Vf_LEV
+c SAI: 3rd dim extended 7->8; slot 8 holds calcite (CaCO3) volume fraction
+c      of the repurposed DD2/DS2 stratospheric-injection modes (see TRAMP_rad.f)
+      REAL*8, DIMENSION(LM,nmodes,8)     :: dry_Vf_LEV
       INTEGER                            :: AMP_RAD_KEY = 1 ! 1=Volume Mixing || 2=Core - Shell || 3=Maxwell Garnett
 
       REAL*8, ALLOCATABLE, DIMENSION(:,:,:)       :: AQsulfRATE !(l,i,j)
@@ -41,7 +43,9 @@ c                                                                     (in OMA, r
       REAL*8, DIMENSION(LM,150)       :: Reff_LEV, NUMB_LEV
       REAL*8, DIMENSION(LM,150)       :: MIX_OC, MIX_SU, MIX_AQ
       COMPLEX*8, DIMENSION(LM,150,6)  :: RindexAMP
-      REAL*8, DIMENSION(LM,150,7)     :: dry_Vf_LEV
+c SAI: 3rd dim extended 7->8 for consistency with the TRACERS_AMP branch
+c      (slot 8 = calcite volume fraction; unused in the OMA_TRAMPRAD branch)
+      REAL*8, DIMENSION(LM,150,8)     :: dry_Vf_LEV
 #endif
 
 !-------------------------------------------------------------------------------------------------------------------------

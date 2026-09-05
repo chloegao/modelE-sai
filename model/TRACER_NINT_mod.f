@@ -18,7 +18,9 @@ C**************  Latitude-Dependant (allocatable) *******************
       REAL*8, DIMENSION(LM,nmodes)     :: Reff_LEV, NUMB_LEV
       REAL*8, DIMENSION(LM,nmodes)     :: MIX_OC, MIX_SU, MIX_AQ
       COMPLEX*8, DIMENSION(LM,nmodes,6):: RindexAMP
-      REAL*8, DIMENSION(LM,nmodes,7)   :: dry_Vf_LEV
+c SAI: 3rd dim extended 7->8 to match the shared SETAMP_LEV species loops
+c      (slot 8 = calcite volume fraction; always zero in offline-aerosol use)
+      REAL*8, DIMENSION(LM,nmodes,8)   :: dry_Vf_LEV
       ! FALSE : one Radiation call
       ! TRUE  : nmodes Radiation calls
       INTEGER                            :: AMP_RAD_KEY = 1 ! 1=Volume Mixing || 2=Core - Shell || 3=Maxwell Garnett
