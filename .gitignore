@@ -29,3 +29,6 @@ spconfig.py
 .current_options
 .current_srcs
 .liblist
+
+# built model executables
+*.bin
