@@ -48,3 +48,11 @@ CPPFLAGS = -DMACHINE_MAC
 # ifeq ($(XCODE_VERSION_MAJOR),11)
 #   CPATH_HACK=CPATH=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include 
 # endif
+
+# Homebrew's gcc is built against the SDK current at its release; when the
+# installed Command Line Tools are newer, its linker cannot find libSystem
+# and every link fails with "ld: library 'System' not found" - even for a
+# hello-world program. Point the toolchain at the SDK actually installed.
+# (Equivalent to exporting SDKROOT in the shell before building.)
+SDKROOT ?= $(shell xcrun --show-sdk-path 2>/dev/null)
+export SDKROOT
