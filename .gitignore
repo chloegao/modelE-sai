@@ -1,0 +1,23 @@
+.DS_Store
+.#*
+#*
+#*#
+a.out
+*.o
+*.build
+*.mod
+*.stamp
+*.pyc
+*~
+build/*
+*.png
+*.pdf
+*.nc
+*.pik
+spack-build.*
+spconfig.py
+
+# --- local additions ---
+*.icloud
+* 2.*
+* 3.*

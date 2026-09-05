@@ -1,0 +1,5 @@
+# ignore build output, but keep the Makefile and the rundecks themselves
+*
+!/Makefile
+!*.R
+!/.gitignore
