@@ -1,10 +1,28 @@
 # Darwin - specific options
 
-CPP = cpp -P -traditional
+# The generic container templates (HashMapTemplate.h, AssociativeArrayTemplate.h)
+# build module names by token pasting:
+#     #define CONCAT(A,B) IDENTITY(A)IDENTITY(B)
+#     #define MODULE_NAME DEFAULT_MODULE_NAME(HASH_TYPE)
+# which relies on the preprocessor emitting adjacent macro expansions with
+# nothing between them. Apple's /usr/bin/cpp (clang) inserts a space, so
+# AttributeHashMap.F90 preprocesses to "module AttributeHashMap _mod" instead
+# of "module AttributeHashMap_mod". The dependency scan then records the wrong
+# module name and the build fails to order AttributeHashMap.o before its users.
+# Prefer a real GNU cpp when one is installed (Homebrew gcc ships cpp-NN).
+GNU_CPP := $(firstword $(foreach c,cpp-15 cpp-14 cpp-13 cpp-12,$(shell command -v $(c) 2>/dev/null)))
+ifneq ($(GNU_CPP),)
+  CPP = $(GNU_CPP) -P -traditional
+else
+  CPP = cpp -P -traditional
+endif
+
 # /usr/bin/cpp on macOS is traditional-by-default, so base.mk's
-# "filter-out -traditional" cannot give a normal-mode preprocessor for C.
-# Name one explicitly; used only for scanning .c files.
+# "filter-out -traditional" cannot produce a normal-mode preprocessor for C.
+# Name one explicitly; used only for scanning .c sources, where traditional
+# mode cannot parse the current SDK headers.
 CPP_C = clang -E -P
+
 CPPFLAGS = -DMACHINE_MAC
 
 # this is a hack to work around Xcode/MacPorts bug with Xcode 11.x.x
@@ -15,4 +33,3 @@ CPPFLAGS = -DMACHINE_MAC
 # ifeq ($(XCODE_VERSION_MAJOR),11)
 #   CPATH_HACK=CPATH=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include 
 # endif
-
