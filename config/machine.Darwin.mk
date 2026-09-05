@@ -1,6 +1,10 @@
 # Darwin - specific options
 
-CPP = clang -E -x c -P -traditional
+CPP = cpp -P -traditional
+# /usr/bin/cpp on macOS is traditional-by-default, so base.mk's
+# "filter-out -traditional" cannot give a normal-mode preprocessor for C.
+# Name one explicitly; used only for scanning .c files.
+CPP_C = clang -E -P
 CPPFLAGS = -DMACHINE_MAC
 
 # this is a hack to work around Xcode/MacPorts bug with Xcode 11.x.x
