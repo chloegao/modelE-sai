@@ -924,27 +924,29 @@ c         NUMB_LEV(l,n) = NI(n)* 0.7853 * (1.e-6*DG_WET(n))**2   ! [#/layer]
         DO n=1,nmodes           ! loop over modes
           Volfrac(n,s) = VMass(n,s) / (Sum(VMass(n,:)) + TINYNUMER)
           dry_Vf_LEV(l,n,s) = VMass(n,s) / (Sum(VMass(n,1:6)) + TINYNUMER)
-      ! Core Shell Composition
+        ENDDO
+      ENDDO
+
+      ! Core Shell Composition: core is BC, shell material is OC, SO4 and H2O.
+      ! The modes selected here must match the core-shell modes in SETAMP.
 c     Modes are selected by name, not by index. The mode numbering differs
 c     between mechanisms: M1 has 16 modes (..10 BC1, 11 BC2, 12 BC3, 13 DBC,
 c     14 BOC, 15 BCS, 16 MXX) while M9/M10 have 15 (..10 BC1, 11 BC2, 12 OCS,
-c     13 BOC, 14 BCS, 15 MXX). The former hard-coded indices 10-12, 14 and 15
-c     therefore addressed OCS, BCS and MXX under M9/M10, and left the real BOC
-c     untreated. MODE_NAME comes from AERO_CONFIG as MNAME(IMODES), so it
-c     follows the active mechanism; the Maxwell Garnett block below already
-c     selects this same way. Formulae are unchanged, so M1 results are
-c     bit-identical.
-          select case (MODE_NAME(n))
-          case ('BOC')
-            MIX_OC(l,n) = VMass(n,3) / (VMass(n,1) + VMass(n,2) + VMass(n,3) + VMass(n,7) + TINYNUMER)
-            MIX_SU(l,n) = VMass(n,1) / (VMass(n,1) + VMass(n,2) + VMass(n,3) + VMass(n,7) + TINYNUMER)
-            MIX_AQ(l,n) = VMass(n,7) / (VMass(n,1) + VMass(n,2) + VMass(n,3) + VMass(n,7) + TINYNUMER)
-          case ('BC1','BC2','BC3','BCS')
-            MIX_OC(l,n) = 0.d0
-            MIX_SU(l,n) = VMass(n,1) / (VMass(n,1) + VMass(n,2) + VMass(n,7) + TINYNUMER)
-            MIX_AQ(l,n) = VMass(n,7) / (VMass(n,1) + VMass(n,2) + VMass(n,7) + TINYNUMER)
-          end select
-        ENDDO
+c     13 BOC, 14 BCS, 15 MXX). MODE_NAME comes from AERO_CONFIG as
+c     MNAME(IMODES), so it follows the active mechanism; the Maxwell Garnett
+c     block below already selects this same way.
+c     OC is counted in the shell of every BC-core mode, not only BOC. Under
+c     M1 and M10 the BC1/BC2/BC3/BCS modes carry no organic mass (see MSPCS in
+c     AERO_CONFIG), so VMass(n,3)=0 there and this reduces to the former
+c     MIX_OC=0 form exactly. Under the VBS mechanism M9, organics condense onto
+c     BC1, BC2 and BCS, and that coating must appear in the shell.
+      DO n=1,nmodes             ! loop over modes
+        select case (MODE_NAME(n))
+        case ('BC1','BC2','BC3','BOC','BCS')
+          MIX_OC(l,n) = VMass(n,3) / (VMass(n,1) + VMass(n,2) + VMass(n,3) + VMass(n,7) + TINYNUMER)
+          MIX_SU(l,n) = VMass(n,1) / (VMass(n,1) + VMass(n,2) + VMass(n,3) + VMass(n,7) + TINYNUMER)
+          MIX_AQ(l,n) = VMass(n,7) / (VMass(n,1) + VMass(n,2) + VMass(n,3) + VMass(n,7) + TINYNUMER)
+        end select
       ENDDO
  
       ! + Refractive Index of Aerosol mix per mode and wavelength
